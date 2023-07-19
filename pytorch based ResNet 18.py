@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[26]:
-
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,15 +8,9 @@ import torchvision.transforms as transforms
 device = 'cuda' if torch.cuda.is_available else 'cpu'
 
 
-# In[27]:
-
-
 batch_size = 10
 learning_rate = 1e-3
 epochs = 100
-
-
-# In[28]:
 
 
 import ssl
@@ -40,9 +28,6 @@ train_loader = torch.utils.data.DataLoader(train_set, batch_size = batch_size, s
 
 test_set = torchvision.datasets.CIFAR10(root = '/data', train = False, download = True, transform = transform)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size = batch_size, shuffle = False, drop_last = True)
-
-
-# In[29]:
 
 
 class myResnet(nn.Module):
@@ -135,21 +120,12 @@ class myResnet(nn.Module):
         return out
 
 
-# In[30]:
-
-
 model = myResnet()
 model.to(device)
 
 
-# In[31]:
-
-
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = 1e-3)
-
-
-# In[33]:
 
 
 #train & evaluate
@@ -172,9 +148,6 @@ for epoch in range(epochs):
             print('[%d, %5d] loss: %.3f' %
                   (epoch + 1, i + 1, running_loss / 200))
             running_loss = 0.0
-
-
-# In[ ]:
 
 
 correct = 0
