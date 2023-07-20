@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 # In[1]:
 
 
@@ -15,7 +18,7 @@ device = 'cuda' if torch.cuda.is_available else 'cpu'
 
 
 batch_size = 100
-learning_rate = 1e-3
+learning_rate = 0.01
 epochs = 20
 
 
@@ -39,7 +42,7 @@ test_set = torchvision.datasets.CIFAR10(root = '/data', train = False, download 
 test_loader = torch.utils.data.DataLoader(test_set, batch_size = batch_size, shuffle = False, drop_last = True)
 
 
-# In[4]:
+# In[31]:
 
 
 class myResnet(nn.Module):
@@ -57,22 +60,13 @@ class myResnet(nn.Module):
         )
         
         self.blockA = nn.Sequential(
-            nn.Conv2d(3, 8, kernel_size = 3, stride = 1, padding = 1),
-            nn.BatchNorm2d(8),
+            nn.Conv2d(3, 16, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(16),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size = 2, stride = 2)
         )
         
         self.blockB = nn.Sequential(
-            nn.Conv2d(8, 16, kernel_size = 3, stride = 1, padding = 1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.Conv2d(16, 16, kernel_size = 3, stride = 1, padding = 1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-        )
-        
-        self.blockC = nn.Sequential(
             nn.Conv2d(16, 32, kernel_size = 3, stride = 1, padding = 1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
@@ -81,7 +75,7 @@ class myResnet(nn.Module):
             nn.ReLU(),
         )
         
-        self.blockD = nn.Sequential(
+        self.blockC = nn.Sequential(
             nn.Conv2d(32, 64, kernel_size = 3, stride = 1, padding = 1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -90,25 +84,53 @@ class myResnet(nn.Module):
             nn.ReLU(),
         )
         
-        self.blockE = nn.Sequential(
-            nn.Conv2d(512, 1024, kernel_size = 3, stride = 1, padding = 1),
-            nn.BatchNorm2d(1024),
+        self.blockD = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Conv2d(1024, 1024, kernel_size = 3, stride = 1, padding = 1),
-            nn.BatchNorm2d(1024),
+            nn.Conv2d(128, 128, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+        )
+        
+        self.blockE = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+        )
+        
+        self.blockF = nn.Sequential(
+            nn.Conv2d(256, 512, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+        )
+        
+        self.blockG = nn.Sequential(
+            nn.Conv2d(256, 512, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size = 3, stride = 1, padding = 1),
+            nn.BatchNorm2d(512),
             nn.ReLU(),
         )
 
+        self.MaxPool = nn.MaxPool2d(kernel_size = 2, stride = 2)
         self.pool = nn.AvgPool2d(kernel_size = 2, stride = 2)
         
-      #  self.fc = nn.Linear(8 * 8 * 1024, 10) 
-        self.fc = nn.Linear(8 * 8 * 64, 10)
+        self.fc = nn.Linear(512, 10)
         
         #skip connections
-        self.conv1X1_a = nn.Conv2d(8, 16, kernel_size = 1, stride = 1)
-        self.conv1X1_b = nn.Conv2d(16, 32, kernel_size = 1, stride = 1)
-        self.conv1X1_c = nn.Conv2d(32, 64, kernel_size = 1, stride = 1)
-        self.conv1X1_d = nn.Conv2d(512, 1024, kernel_size = 1, stride = 1)
+        self.conv1X1_a = nn.Conv2d(16, 32, kernel_size = 1, stride = 1)
+        self.conv1X1_b = nn.Conv2d(32, 64, kernel_size = 1, stride = 1)
+        self.conv1X1_c = nn.Conv2d(64, 128, kernel_size = 1, stride = 1)
+        self.conv1X1_d = nn.Conv2d(128, 256, kernel_size = 1, stride = 1)
+        self.conv1X1_e = nn.Conv2d(256, 512, kernel_size = 1, stride = 1)
         
     
     def forward(self, x):
@@ -119,21 +141,29 @@ class myResnet(nn.Module):
         skip = self.conv1X1_a(out)
         out = self.blockB(out)
         out = out + skip
+        out = self.MaxPool(out)
         
         #layer3
         skip = self.conv1X1_b(out)
         out = self.blockC(out)
         out = out + skip
-        
+        out = self.MaxPool(out)
+
         #layer 4
         skip = self.conv1X1_c(out)
         out = self.blockD(out)
         out = out + skip
-        
+        out = self.MaxPool(out)
+
         #layer 5
-     #   skip = self.conv1X1_d(out)
-     #   out = self.blockE(out)
-     #   out = out + skip
+        skip = self.conv1X1_d(out)
+        out = self.blockE(out)
+        out = out + skip
+
+        #layer 6
+        skip = self.conv1X1_e(out)
+        out = self.blockF(out)
+        out = out + skip
         
         #fc layer
         out = self.pool(out)
@@ -143,28 +173,28 @@ class myResnet(nn.Module):
         return out
 
 
-# In[5]:
+# In[32]:
 
 
 model = myResnet()
 model.to(device)
 
 
-# In[6]:
+# In[33]:
 
 
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr = 1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
 
 
-# In[7]:
+# In[34]:
 
 
 #learning rate scheduler
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size = 5, gamma = 0.5)
 
 
-# In[8]:
+# In[35]:
 
 
 #train & evaluate
@@ -185,13 +215,13 @@ for epoch in range(epochs):
         running_loss += loss.item()
         if i % 100 == 99:  
             print('[%3d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 200))
+                  (epoch + 1, i + 1, running_loss / 100))
             running_loss = 0.0
         
     scheduler.step()
 
 
-# In[9]:
+# In[36]:
 
 
 correct = 0
@@ -205,3 +235,10 @@ with torch.no_grad():
         correct += (predicted == labels).sum().item()
 
 print('Accuracy : %d %%' % (100 * correct / total))
+
+
+# In[ ]:
+
+
+
+
